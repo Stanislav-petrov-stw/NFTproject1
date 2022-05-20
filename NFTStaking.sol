@@ -1,6 +1,6 @@
-// SPDX-license-identifier: MIT LICENSE
+// SPDX-License-Identifier: MIT LICENSE
 
-pragam solidity ^0.8.4;
+pragma solidity 0.8.4;
 
 import "https://github.com/net2devcrypto/n2dstaking/Collection.sol";
 import "https://github.com/net2devcrypto/n2dstaking/N2DRewards.sol";
@@ -32,16 +32,16 @@ contract NFTStaking is Ownable, IERC721Receiver {
          token = _token;
      }
 
-     function stake(uint256[] calldata tokenId) external {
-         uint256 tokenId;
-         totalStaked += tokenIds.length;
-         for (uint i = 0; i < tokenIds.lenght; i++) {
-             tokenId = tokenIds[i];
-             require(nft.wonerOf(tokenId) == msg.sender, "not your token");
-             require(vault[tokenId].tokenid == 0, 'alredy staked');
+  function stake(uint256[] calldata tokenIds) external {
+    uint256 tokenId;
+    totalStaked += tokenIds.length;
+    for (uint i = 0; i < tokenIds.length; i++) {
+      tokenId = tokenIds[i];
+      require(nft.ownerOf(tokenId) == msg.sender, "not your token");
+      require(vault[tokenId].tokenId == 0, 'already staked');
 
              nft.transferFrom(msg.sender, address(this), tokenId);
-             emit NFTStaked(msg.sender, tokenId, vlock.timestamp);
+             emit NFTStaked(msg.sender, tokenId, block.timestamp);
 
              vault[tokenId] = Stake({
                  owner: msg.sender,
@@ -53,8 +53,8 @@ contract NFTStaking is Ownable, IERC721Receiver {
 
     function _unstakeMany(address account, uint256[] calldata tokenIds) internal {
         uint256 tokenId;
-        totalStaked -= tokenIds.lenght;
-        for (uint i = 0; i < tokenIds.lenght; i++) {
+        totalStaked -= tokenIds.length;
+        for (uint i = 0; i < tokenIds.length; i++) {
           tokenId = tokenIds[i];
          Stake memory staked = vault[tokenId];
          require(staked.owner == msg.sender, "not an owner");
@@ -74,20 +74,20 @@ contract NFTStaking is Ownable, IERC721Receiver {
     }
 
     function unstake(uint256[] calldata tokenIds) external {
-        _claim(msg.sender, token Ids, true);
+        _claim(msg.sender, tokenIds, true);
     }
 
     function _claim(address account, uint256[] calldata tokenIds, bool _unstake) internal {
         uint256 tokenId;
         uint256 earned = 0;
 
-        for (uint i = 0; i < tokenIds.lenght; i++) {
-            tokenId = tokenIds[];
+        for (uint i = 0; i < tokenIds.length; i++) {
+            tokenId = tokenIds[i];
             Stake memory staked = vault[tokenId];
             require(staked.owner == account, "not an owner");
             uint256 stakedAt = staked.timestamp;
-            earned += 10000 ether *(block.timestamp - stakedAt) / 1 days;
-            vault[tokenId] = Staked({
+            earned += 100000 ether *(block.timestamp - stakedAt) / 1 days;
+            vault[tokenId] = Stake({
                 owner: account,
                 tokenId: uint24(tokenId),
                 timestamp: uint48(block.timestamp)
@@ -95,7 +95,7 @@ contract NFTStaking is Ownable, IERC721Receiver {
 
         }
         if (earned > 0) {
-            earned = earned / 10000;
+            earned = earned / 100000;
             token.mint(account, earned);
         }
         if (_unstake) {
@@ -104,16 +104,20 @@ contract NFTStaking is Ownable, IERC721Receiver {
         emit Claimed(account, earned);
     }
 
-    // Retrive Staking Information Functions
     function earningInfo(uint256[] calldata tokenIds) external view returns (uint256[2] memory info){
         uint256 tokenId;
+        uint256 totalScore = 0;
         uint256 earned = 0;
-         Staked memory staked = vault[tokenId];
+         Stake memory staked = vault[tokenId];
          uint256 stakedAt = staked.timestamp;
-         earned += 10000 ether * (block.timestamp - stakedAt) / 1 days;
-        return [earned];
+         earned += 100000 ether * (block.timestamp - stakedAt) / 1 days;
+        uint256 earnRatePerSecond = totalScore * 1 ether / 1 days;
+        earnRatePerSecond = earnRatePerSecond / 100000;
+        // earned, earnRatePerSecond
+        return [earned, earnRatePerSecond];
     }
 
+    // should never be used inside transaction because of gas fee
     function balanceOf(address account) public view returns (uint256) {
         uint256 balance = 0;
         uint256 supply = nft.totalSupply();
@@ -125,13 +129,14 @@ contract NFTStaking is Ownable, IERC721Receiver {
         return balance;
     }
 
+    // should never be used inside of transaction because of gas fee
     function tokensOfOwner(address account) public view returns (uint256[] memory ownerTokens) {
 
         uint256 supply = nft.totalSupply();
         uint256[] memory tmp = new uint256[](supply);
 
         uint256 index = 0;
-        for(uint tokenId = 1; tokenId <= supply: tokenId++) {
+        for(uint tokenId = 1; tokenId <= supply; tokenId++) {
             if (vault[tokenId].owner == account) {
                 tmp[index] = vault[tokenId].tokenId;
                 index +=1;
@@ -157,4 +162,3 @@ contract NFTStaking is Ownable, IERC721Receiver {
     }
 
 }
-
